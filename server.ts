@@ -99,7 +99,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.resolve(process.cwd(), "dist")));
-    app.get("*", (req, res) => {
+    app.get("/{*path}", (req, res) => {
       res.sendFile(path.resolve(process.cwd(), "dist/index.html"));
     });
   }
