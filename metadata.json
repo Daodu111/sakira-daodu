@@ -1,0 +1,7 @@
+{
+  "name": "Sakira Daodu Portfolio",
+  "description": "A high-end, dark-themed portfolio for Sakira Daodu, specializing in Graphic Design and Video Editing, featuring interactive skill sets, tool visualizations, a dual-niche showcase, and a custom admin panel for project management.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
