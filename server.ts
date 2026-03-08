@@ -5,25 +5,17 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import fs from "fs/promises";
-import crypto from "crypto";
 import cors from "cors";
 import bodyParser from "body-parser";
 
 const PROJECTS_FILE = path.resolve(process.cwd(), "projects.json");
 const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || process.env["\uFEFFADMIN_PASSWORD"] || "").trim();
-const AUTH_TOKENS = new Map<string, number>();
-const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
   const auth = req.headers.authorization;
   const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
-  if (!token || !AUTH_TOKENS.has(token)) {
+  if (!token || token !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: "Unauthorized" });
-  }
-  const expires = AUTH_TOKENS.get(token)!;
-  if (Date.now() > expires) {
-    AUTH_TOKENS.delete(token);
-    return res.status(401).json({ error: "Session expired" });
   }
   next();
 }
@@ -35,7 +27,7 @@ async function startServer() {
   app.use(cors());
   app.use(bodyParser.json({ limit: "15mb" }));
 
-  // Auth login
+  // Auth login - returns password as token so auth survives server restarts (Render sleep)
   app.post("/api/auth/login", async (req, res) => {
     const raw = req.body?.password;
     const password = typeof raw === "string" ? raw.trim() : "";
@@ -45,9 +37,7 @@ async function startServer() {
     if (password !== ADMIN_PASSWORD) {
       return res.status(401).json({ error: "Invalid password" });
     }
-    const token = crypto.randomBytes(32).toString("hex");
-    AUTH_TOKENS.set(token, Date.now() + TOKEN_TTL_MS);
-    res.json({ token });
+    res.json({ token: ADMIN_PASSWORD });
   });
 
   // Projects API - JSON file (used when client doesn't use Firestore)

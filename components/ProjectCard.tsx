@@ -19,7 +19,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
       <div className="aspect-square md:aspect-video overflow-hidden bg-black">
         {project.niche === 'VIDEO' ? (
           <video 
-            src={project.image} 
+            src={project.image}
+            preload="metadata"
+            playsInline
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             muted
             loop

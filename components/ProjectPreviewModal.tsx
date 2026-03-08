@@ -33,6 +33,8 @@ const ProjectPreviewModal: React.FC<ProjectPreviewModalProps> = ({ project, onCl
                 src={project.image}
                 controls
                 autoPlay
+                playsInline
+                preload="auto"
                 className="max-w-full max-h-[75vh] w-auto object-contain"
                 onError={(e) => {
                   (e.target as HTMLVideoElement).style.display = 'none';
