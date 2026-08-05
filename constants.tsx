@@ -39,7 +39,7 @@ export const PROJECTS: Project[] = [
     id: '5',
     title: 'Motion Graphics Reel',
     category: 'Showreel',
-    image: 'https://picsum.photos/seed/video1/1280/720',
+    image: 'https://assets.mixkit.co/videos/preview/mixkit-abstract-digital-grid-43949-large.mp4',
     niche: Niche.VIDEO,
     description: 'A compilation of dynamic motion design works.'
   },
@@ -47,7 +47,7 @@ export const PROJECTS: Project[] = [
     id: '6',
     title: 'Corporate Brand Film',
     category: 'Editing',
-    image: 'https://picsum.photos/seed/video2/1280/720',
+    image: 'https://assets.mixkit.co/videos/preview/mixkit-man-working-on-his-laptop-308-large.mp4',
     niche: Niche.VIDEO,
     description: 'Story-driven cinematic edit for a tech firm.'
   },
@@ -55,7 +55,7 @@ export const PROJECTS: Project[] = [
     id: '7',
     title: 'Product Launch Ad',
     category: 'Commercial',
-    image: 'https://picsum.photos/seed/video3/1280/720',
+    image: 'https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-smart-watch-432-large.mp4',
     niche: Niche.VIDEO,
     description: 'Fast-paced rhythmic commercial editing.'
   }

@@ -25,7 +25,7 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(cors());
-  app.use(bodyParser.json({ limit: "15mb" }));
+  app.use(bodyParser.json({ limit: "100mb" }));
 
   // Auth login - returns password as token so auth survives server restarts (Render sleep)
   app.post("/api/auth/login", async (req, res) => {
@@ -52,8 +52,15 @@ async function startServer() {
 
   app.post("/api/projects", requireAuth, async (req, res) => {
     try {
-      const { title, category, image, niche, description } = req.body;
-      const project = { title, category, image, niche, description };
+      const { title, category, image, images, niche, description } = req.body;
+      const project = {
+        title,
+        category,
+        image,
+        ...(Array.isArray(images) && images.length > 0 ? { images } : {}),
+        niche,
+        description,
+      };
 
       const data = await fs.readFile(PROJECTS_FILE, "utf-8");
       const projects = JSON.parse(data);
@@ -62,7 +69,46 @@ async function startServer() {
       await fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2));
       res.status(201).json(newProject);
     } catch (error) {
-      res.status(500).json({ error: "Failed to save project" });
+      console.error("POST /api/projects failed:", error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to save project",
+      });
+    }
+  });
+
+  app.put("/api/projects/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, category, image, images, niche, description } = req.body;
+
+      const data = await fs.readFile(PROJECTS_FILE, "utf-8");
+      const projects = JSON.parse(data);
+      const index = projects.findIndex((p: { id: string }) => p.id === id);
+      if (index === -1) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const updated: Record<string, unknown> = {
+        ...projects[index],
+        title,
+        category,
+        image,
+        niche,
+        description,
+      };
+      if (Array.isArray(images) && images.length > 0) {
+        updated.images = images;
+      } else {
+        delete updated.images;
+      }
+      projects[index] = updated;
+      await fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2));
+      res.status(200).json(updated);
+    } catch (error) {
+      console.error("PUT /api/projects failed:", error);
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to update project",
+      });
     }
   });
 
@@ -93,6 +139,17 @@ async function startServer() {
       res.sendFile(path.resolve(process.cwd(), "dist/index.html"));
     });
   }
+
+  app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err?.type === "entity.too.large" || err?.status === 413) {
+      return res.status(413).json({
+        error: "Upload too large. Compress images or use Firebase Storage / image URLs.",
+      });
+    }
+    console.error("Unhandled server error:", err);
+    if (res.headersSent) return next(err);
+    res.status(500).json({ error: err?.message || "Server error" });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

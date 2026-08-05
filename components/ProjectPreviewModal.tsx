@@ -1,5 +1,8 @@
 import React from 'react';
 import { Project } from '../lib/projectsApi';
+import { getProjectImages, getPrimaryMedia } from '../lib/projectMedia';
+import ImageCarousel from './ImageCarousel';
+import ProjectVideo from './ProjectVideo';
 import { X } from 'lucide-react';
 
 interface ProjectPreviewModalProps {
@@ -9,6 +12,9 @@ interface ProjectPreviewModalProps {
 
 const ProjectPreviewModal: React.FC<ProjectPreviewModalProps> = ({ project, onClose }) => {
   if (!project) return null;
+
+  const images = getProjectImages(project);
+  const isVideo = project.niche === 'VIDEO';
 
   return (
     <div
@@ -27,24 +33,31 @@ const ProjectPreviewModal: React.FC<ProjectPreviewModalProps> = ({ project, onCl
           <X className="w-8 h-8" />
         </button>
         <div className="bg-white dark:bg-[#0a0a0a] rounded-2xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col">
-          <div className="bg-black flex items-center justify-center overflow-y-auto min-h-[60vh] max-h-[80vh] p-4">
-            {project.niche === 'VIDEO' ? (
-              <video
-                src={project.image}
-                controls
-                autoPlay
-                playsInline
-                preload="auto"
-                className="max-w-full max-h-[75vh] w-auto object-contain"
-                onError={(e) => {
-                  (e.target as HTMLVideoElement).style.display = 'none';
-                }}
-              />
+          <div className="bg-black flex items-center justify-center overflow-hidden min-h-[50vh] max-h-[80vh] relative">
+            {isVideo ? (
+              <div className="w-full aspect-video max-h-[75vh] flex items-center justify-center">
+                <ProjectVideo
+                  src={getPrimaryMedia(project)}
+                  title={project.title}
+                  className="max-w-full max-h-[75vh] w-full h-full object-contain"
+                  controls
+                  autoPlay
+                  muted={false}
+                />
+              </div>
+            ) : images.length > 1 ? (
+              <div className="w-full max-h-[75vh] aspect-video">
+                <ImageCarousel
+                  images={images}
+                  alt={project.title}
+                  imgClassName="max-w-full max-h-[75vh] w-full h-full object-contain mx-auto"
+                />
+              </div>
             ) : (
               <img
-                src={project.image}
+                src={getPrimaryMedia(project)}
                 alt={project.title}
-                className="max-w-full max-h-[75vh] w-auto object-contain"
+                className="max-w-full max-h-[75vh] w-auto object-contain p-4"
               />
             )}
           </div>

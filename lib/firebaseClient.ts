@@ -21,23 +21,45 @@ function getConfig() {
 
 let db: Firestore | null = null;
 
+/** Firestore for project CRUD — disabled when VITE_USE_FIRESTORE=false. */
 export function useFirestore(): boolean {
   if (import.meta.env.VITE_USE_FIRESTORE === "false") return false;
   return !!getConfig();
 }
 
-export function getFirestoreDb(): Firestore | null {
-  if (db) return db;
+/** Firebase Storage for media uploads.
+ * Off when Firestore is disabled, unless VITE_USE_STORAGE=true is set explicitly.
+ */
+export function useFirebaseStorage(): boolean {
+  if (import.meta.env.VITE_USE_STORAGE === "true") return !!getConfig();
+  if (import.meta.env.VITE_USE_STORAGE === "false") return false;
+  // Match project preference: local JSON mode skips Storage (often misconfigured).
+  if (import.meta.env.VITE_USE_FIRESTORE === "false") return false;
+  return !!getConfig();
+}
+
+function ensureFirebaseApp(): boolean {
   const config = getConfig();
-  if (!config) return null;
+  if (!config) return false;
   try {
     if (getApps().length === 0) {
       initializeApp(config);
     }
+    return true;
+  } catch (err) {
+    console.error("Firebase init error:", err);
+    return false;
+  }
+}
+
+export function getFirestoreDb(): Firestore | null {
+  if (db) return db;
+  if (!ensureFirebaseApp()) return null;
+  try {
     db = getFirestore();
     return db;
   } catch (err) {
-    console.error("Firebase init error:", err);
+    console.error("Firestore init error:", err);
     return null;
   }
 }
@@ -47,6 +69,7 @@ export interface ProjectDoc {
   title: string;
   category: string;
   image: string;
+  images?: string[];
   niche: string;
   description: string;
 }
@@ -68,6 +91,17 @@ export async function firestoreAddProject(project: Omit<ProjectDoc, "id">): Prom
   return docData as ProjectDoc;
 }
 
+export async function firestoreUpdateProject(
+  id: string,
+  project: Omit<ProjectDoc, "id">
+): Promise<ProjectDoc | null> {
+  const firestore = getFirestoreDb();
+  if (!firestore) return null;
+  const docData = { ...project, id };
+  await setDoc(doc(firestore, PROJECTS_COLLECTION, id), docData);
+  return docData as ProjectDoc;
+}
+
 export async function firestoreDeleteProject(id: string): Promise<boolean> {
   const firestore = getFirestoreDb();
   if (!firestore) return false;
@@ -75,9 +109,11 @@ export async function firestoreDeleteProject(id: string): Promise<boolean> {
   return true;
 }
 
-/** Upload a file to Firebase Storage and return the public URL. Use this instead of base64 when using Firestore. */
+/** Upload a file to Firebase Storage and return the public URL. */
 export async function uploadImageToStorage(file: File): Promise<string> {
-  getFirestoreDb(); // ensure Firebase app is initialized
+  if (!ensureFirebaseApp()) {
+    throw new Error("Firebase is not configured");
+  }
   const storage = getStorage();
   const path = `projects/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
   const storageRef = ref(storage, path);

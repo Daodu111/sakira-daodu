@@ -1,0 +1,12 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /projects/{allPaths=**} {
+      // Public read for portfolio images; open write for admin uploads from the client.
+      // Tighten later with Firebase Auth if needed.
+      allow read: if true;
+      allow write: if request.resource.size < 25 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*|video/.*');
+    }
+  }
+}
