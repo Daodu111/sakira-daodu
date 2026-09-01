@@ -11,6 +11,23 @@ import bodyParser from "body-parser";
 const PROJECTS_FILE = path.resolve(process.cwd(), "projects.json");
 const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || process.env["\uFEFFADMIN_PASSWORD"] || "").trim();
 
+function sameProjectId(a: unknown, b: unknown): boolean {
+  return String(a) === String(b);
+}
+
+async function readProjects(): Promise<any[]> {
+  const data = await fs.readFile(PROJECTS_FILE, "utf-8");
+  return JSON.parse(data);
+}
+
+async function writeProjects(projects: unknown): Promise<void> {
+  const payload = JSON.stringify(projects, null, 2);
+  const tmp = PROJECTS_FILE + ".tmp";
+  await fs.writeFile(tmp, payload, "utf-8");
+  await fs.copyFile(tmp, PROJECTS_FILE);
+  await fs.unlink(tmp).catch(() => undefined);
+}
+
 function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
   const auth = req.headers.authorization;
   const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
@@ -43,8 +60,10 @@ async function startServer() {
   // Projects API - JSON file (used when client doesn't use Firestore)
   app.get("/api/projects", async (req, res) => {
     try {
-      const data = await fs.readFile(PROJECTS_FILE, "utf-8");
-      res.json(JSON.parse(data));
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      const projects = await readProjects();
+      res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to read projects" });
     }
@@ -62,11 +81,10 @@ async function startServer() {
         description,
       };
 
-      const data = await fs.readFile(PROJECTS_FILE, "utf-8");
-      const projects = JSON.parse(data);
+      const projects = await readProjects();
       const newProject = { ...project, id: Date.now().toString() };
       projects.push(newProject);
-      await fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2));
+      await writeProjects(projects);
       res.status(201).json(newProject);
     } catch (error) {
       console.error("POST /api/projects failed:", error);
@@ -81,9 +99,8 @@ async function startServer() {
       const { id } = req.params;
       const { title, category, image, images, niche, description } = req.body;
 
-      const data = await fs.readFile(PROJECTS_FILE, "utf-8");
-      const projects = JSON.parse(data);
-      const index = projects.findIndex((p: { id: string }) => p.id === id);
+      const projects = await readProjects();
+      const index = projects.findIndex((p: { id: string | number }) => sameProjectId(p.id, id));
       if (index === -1) {
         return res.status(404).json({ error: "Project not found" });
       }
@@ -102,7 +119,7 @@ async function startServer() {
         delete updated.images;
       }
       projects[index] = updated;
-      await fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2));
+      await writeProjects(projects);
       res.status(200).json(updated);
     } catch (error) {
       console.error("PUT /api/projects failed:", error);
@@ -116,10 +133,8 @@ async function startServer() {
     try {
       const { id } = req.params;
 
-      const data = await fs.readFile(PROJECTS_FILE, "utf-8");
-      let projects = JSON.parse(data);
-      projects = projects.filter((p: any) => p.id !== id);
-      await fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2));
+      const projects = (await readProjects()).filter((p: any) => !sameProjectId(p.id, id));
+      await writeProjects(projects);
       res.status(200).json({ message: "Project deleted" });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete project" });

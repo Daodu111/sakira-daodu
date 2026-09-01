@@ -4,12 +4,13 @@ import { useTheme } from './ThemeContext';
 
 interface CircularSkillProps {
   label: string;
+  name?: string;
   percentage: number;
   color: string;
   size?: number;
 }
 
-const CircularSkill: React.FC<CircularSkillProps> = ({ label, percentage, color, size = 80 }) => {
+const CircularSkill: React.FC<CircularSkillProps> = ({ label, name, percentage, color, size = 80 }) => {
   const { theme } = useTheme();
   const radius = (size / 2) - 5;
   const circumference = 2 * Math.PI * radius;
@@ -44,7 +45,9 @@ const CircularSkill: React.FC<CircularSkillProps> = ({ label, percentage, color,
           {label}
         </div>
       </div>
-      <span className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold">{label} Expert</span>
+      <span className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold text-center leading-tight max-w-[7.5rem]">
+        {name || `${label} Expert`}
+      </span>
     </div>
   );
 };

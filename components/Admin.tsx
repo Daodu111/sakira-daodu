@@ -31,6 +31,15 @@ const emptyForm = (): ProjectForm => ({
   description: '',
 });
 
+/** Seed/demo assets from the original mock projects — replace these when the user uploads real files. */
+const isMockAssetUrl = (url: string) =>
+  /picsum\.photos|assets\.mixkit\.co/i.test(url);
+
+const mergeUploadedMedia = (prev: string[], incoming: string[]): string[] => {
+  if (prev.length > 0 && prev.every(isMockAssetUrl)) return incoming;
+  return [...prev, ...incoming];
+};
+
 interface AdminProps {
   onBack: () => void;
 }
@@ -62,6 +71,10 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
   };
 
   const mediaUrls = form.mediaUrls || [];
+
+  const patchForm = (patch: Partial<ProjectForm>) => {
+    setForm((prev) => ({ ...prev, ...patch }));
+  };
 
   const setMediaUrls = (updater: string[] | ((prev: string[]) => string[])) => {
     setForm((prev) => {
@@ -122,7 +135,7 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
       }
 
       if (isDesign) {
-        setMediaUrls((prev) => [...prev, ...uploaded]);
+        setMediaUrls((prev) => mergeUploadedMedia(prev, uploaded));
       } else {
         setMediaUrls(uploaded);
       }
@@ -143,7 +156,7 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
     if (form.niche === Niche.VIDEO) {
       setMediaUrls([url]);
     } else {
-      setMediaUrls((prev) => [...prev, url]);
+      setMediaUrls((prev) => mergeUploadedMedia(prev, [url]));
     }
     setUrlDraft('');
   };
@@ -230,12 +243,29 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
         payload.images = images;
       }
 
+      let saved: Project;
       if (editingId) {
-        await apiUpdateProject(editingId, payload, token);
+        saved = await apiUpdateProject(editingId, payload, token);
       } else {
-        await apiAddProject(payload, token);
+        saved = await apiAddProject(payload, token);
       }
-      await fetchProjects();
+
+      try {
+        const latest = await apiFetchProjects();
+        const exists = latest.some((p) => String(p.id) === String(saved.id));
+        setProjects(
+          exists
+            ? latest.map((p) => (String(p.id) === String(saved.id) ? saved : p))
+            : [...latest, saved]
+        );
+      } catch {
+        setProjects((prev) => {
+          if (editingId) {
+            return prev.map((p) => (String(p.id) === String(editingId) ? { ...p, ...saved } : p));
+          }
+          return prev.some((p) => String(p.id) === String(saved.id)) ? prev : [...prev, saved];
+        });
+      }
       closeForm();
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'status' in err && err.status === 401) {
@@ -320,7 +350,7 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
                       required
                       type="text"
                       value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      onChange={(e) => patchForm({ title: e.target.value })}
                       className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition-all"
                       placeholder="Project Title"
                     />
@@ -331,7 +361,7 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
                       required
                       type="text"
                       value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value })}
+                      onChange={(e) => patchForm({ category: e.target.value })}
                       className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition-all"
                       placeholder="e.g. Logo Design"
                     />
@@ -343,7 +373,7 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
                   <div className="flex gap-4">
                     <button
                       type="button"
-                      onClick={() => setForm({ ...form, niche: Niche.DESIGN })}
+                      onClick={() => patchForm({ niche: Niche.DESIGN })}
                       className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border transition-all ${
                         form.niche === Niche.DESIGN
                           ? 'bg-orange-500 text-black border-orange-500'
@@ -491,7 +521,7 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
                     required
                     rows={3}
                     value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    onChange={(e) => patchForm({ description: e.target.value })}
                     className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:border-orange-500 outline-none transition-all resize-none"
                     placeholder="Brief description of the project..."
                   />
@@ -499,9 +529,15 @@ const Admin: React.FC<AdminProps> = ({ onBack }) => {
 
                 <button
                   type="submit"
-                  className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-xl font-bold hover:bg-orange-500 hover:text-white transition-all flex items-center justify-center gap-2"
+                  disabled={uploading}
+                  className="w-full bg-black dark:bg-white text-white dark:text-black py-4 rounded-xl font-bold hover:bg-orange-500 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
                 >
-                  <Save className="w-5 h-5" /> {editingId ? 'Update Project' : 'Save Project'}
+                  {uploading ? (
+                    <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Save className="w-5 h-5" />
+                  )}
+                  {uploading ? 'Saving…' : editingId ? 'Update Project' : 'Save Project'}
                 </button>
               </form>
             </div>

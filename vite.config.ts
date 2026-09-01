@@ -8,6 +8,11 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        watch: {
+          // Writing large base64 media into this file must not trigger a Vite reload
+          // (a reload aborts in-flight PUT /api/projects/:id and the edit looks reverted).
+          ignored: ['**/projects.json', '**/projects.json.tmp'],
+        },
       },
       plugins: [react()],
       define: {

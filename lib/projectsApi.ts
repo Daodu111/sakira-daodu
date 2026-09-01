@@ -30,7 +30,10 @@ export async function fetchProjects(): Promise<Project[]> {
   if (useFirestore()) {
     return firestoreGetProjects();
   }
-  const res = await fetch("/api/projects");
+  const res = await fetch(`/api/projects?t=${Date.now()}`, {
+    cache: "no-store",
+    headers: { "Cache-Control": "no-store" },
+  });
   if (!res.ok) throw new Error("Failed to fetch projects");
   return res.json();
 }

@@ -10,7 +10,13 @@ import Admin from './components/Admin';
 import ContactFormModal from './components/ContactFormModal';
 import ProjectPreviewModal from './components/ProjectPreviewModal';
 import { useTheme } from './components/ThemeContext';
-import { ArrowRight, Mail, Instagram, Linkedin, Twitter, Play, MousePointer2, ChevronRight, Menu, X, Settings, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Instagram, Play, MousePointer2, Menu, X, Settings, Sun, Moon } from 'lucide-react';
+
+const DribbbleIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <path d="M12 24C5.385 24 0 18.615 0 12S5.385 0 12 0s12 5.385 12 12-5.385 12-12 12zm10.12-10.358c-.35-.11-3.17-.953-6.384-.438 1.34 3.684 1.887 6.684 1.992 7.308 2.3-1.555 3.936-4.02 4.392-6.87zm-6.115 7.808c-.153-.9-.75-4.032-2.19-7.77l-.066.02c-5.79 2.015-7.86 6.025-8.04 6.4 1.73 1.358 3.92 2.166 6.29 2.166 1.42 0 2.77-.29 4.006-.816zm-11.62-2.58c.232-.4 3.045-5.055 8.332-6.765.135-.045.27-.084.405-.12-.26-.585-.54-1.167-.832-1.74C6.78 7.23 2.35 7.172 1.85 7.17c-.008.54-.08 1.08-.08 1.63 0 2.23.68 4.3 1.84 6.07zm-1.47-8.05c.49.01 5.05.065 10.23 1.585-1.82-3.23-3.8-5.955-4.09-6.35-2.45.92-4.45 2.85-5.64 5.35.28-.04.56-.08.5-.585zM12.79 2.56c.3.405 2.3 3.15 4.08 6.5 1.93-.325 3.83-.16 4.09-.13-.28-2.99-1.78-5.6-4.04-7.24-.57.6-1.96.87-4.13.87z" />
+  </svg>
+);
 
 const Portfolio: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -26,7 +32,12 @@ const Portfolio: React.FC = () => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     fetchProjects();
-    return () => window.removeEventListener('scroll', handleScroll);
+    const refetch = () => fetchProjects();
+    window.addEventListener('focus', refetch);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('focus', refetch);
+    };
   }, []);
 
   const fetchProjects = async () => {
@@ -128,10 +139,6 @@ const Portfolio: React.FC = () => {
             <a href="#work" className="group flex items-center gap-3 bg-black dark:bg-white text-white dark:text-black px-10 py-5 rounded-full font-bold transition-all hover:bg-orange-500 hover:text-white hover:scale-105 active:scale-95 shadow-xl shadow-black/5 dark:shadow-white/5">
               See My Work <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
-            <div className="flex items-center gap-4 text-sm font-bold text-gray-600 dark:text-gray-300">
-              <span className="flex items-center gap-1"><ChevronRight className="w-4 h-4 text-orange-500" /> 10+ Years Experience</span>
-              <span className="flex items-center gap-1"><ChevronRight className="w-4 h-4 text-orange-500" /> 2400+ Clients</span>
-            </div>
           </div>
         </div>
 
@@ -223,12 +230,11 @@ const Portfolio: React.FC = () => {
               <div className="glass p-10 rounded-3xl border border-black/10 dark:border-white/10">
                 <h3 className="text-xl font-bold uppercase tracking-widest text-center mb-10">Creative Tools</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-12">
-                  <CircularSkill label="Ps" percentage={95} color={TOOL_LOGOS.Ps.color} />
-                  <CircularSkill label="Ai" percentage={90} color={TOOL_LOGOS.Ai.color} />
-                  <CircularSkill label="Ae" percentage={85} color={TOOL_LOGOS.Ae.color} />
-                  <CircularSkill label="Pr" percentage={88} color={TOOL_LOGOS.Pr.color} />
-                  <CircularSkill label="Figma" percentage={92} color={TOOL_LOGOS.Figma.color} />
-                  <CircularSkill label="Id" percentage={80} color={TOOL_LOGOS.Id.color} />
+                  <CircularSkill label="Fg" name="Figma" percentage={92} color={TOOL_LOGOS.Figma.color} />
+                  <CircularSkill label="Ps" name="Adobe Photoshop" percentage={95} color={TOOL_LOGOS.Ps.color} />
+                  <CircularSkill label="Ae" name="Adobe After Effects" percentage={85} color={TOOL_LOGOS.Ae.color} />
+                  <CircularSkill label="Cv" name="Canva" percentage={90} color={TOOL_LOGOS.Canva.color} />
+                  <CircularSkill label="Cc" name="CapCut" percentage={88} color={TOOL_LOGOS.CapCut.color} />
                 </div>
               </div>
             </div>
@@ -243,17 +249,23 @@ const Portfolio: React.FC = () => {
           <h2 className="text-4xl md:text-6xl font-serif font-bold mb-16">Stories from Our <span className="text-orange-500">Clients</span></h2>
           
           <div className="max-w-4xl mx-auto glass p-12 rounded-3xl relative">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-4 border-gray-50 dark:border-[#080808] overflow-hidden">
-              <img src="https://picsum.photos/seed/person1/200/200" alt="Client" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-4 border-gray-50 dark:border-[#080808] overflow-hidden bg-orange-500 flex items-center justify-center">
+              <span className="text-black font-bold text-xl tracking-wide">AD</span>
             </div>
-            <p className="text-2xl italic text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
-              "Collaborating with Sakira was an inspiring experience. She quickly grasped our vision, 
-              asked the right questions and delivered designs that perfectly balanced aesthetics and 
-              functionality. Her creative approach and attention to detail make every step of the process smooth and enjoyable."
-            </p>
+            <div className="text-xl md:text-2xl italic text-gray-700 dark:text-gray-300 mb-8 leading-relaxed space-y-6">
+              <p>
+                "Working with Sakira on the SCA Abeokuta team has been a great experience. She is creative, reliable, and always willing to bring ideas to life in a way that aligns with our vision and communicates our message effectively.
+              </p>
+              <p>
+                What I particularly appreciate is her attention to detail and willingness to take feedback and make improvements. She consistently delivers quality designs, meets deadlines, and contributes positively to the team.
+              </p>
+              <p>
+                I highly recommend Sakira to anyone looking for a talented graphic designer who is not only skilled but also committed, collaborative, and passionate about her work."
+              </p>
+            </div>
             <div>
-              <p className="font-bold text-lg">Rina Kurasawa</p>
-              <p className="text-orange-500 text-sm uppercase tracking-widest">CTO at LuminaTech</p>
+              <p className="font-bold text-lg">Aisha Daodu</p>
+              <p className="text-orange-500 text-sm uppercase tracking-widest">SCA Abeokuta Chapter Lead</p>
             </div>
           </div>
         </div>
@@ -273,9 +285,24 @@ const Portfolio: React.FC = () => {
 
           <div className="flex flex-col md:flex-row items-center justify-between pt-12 border-t border-black/5 dark:border-white/5">
             <div className="flex items-center gap-8 mb-8 md:mb-0">
-              <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors"><Instagram className="w-5 h-5" /></a>
-              <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors"><Linkedin className="w-5 h-5" /></a>
+              <a
+                href="https://www.instagram.com/phenomenal_designs_and_edits?igsi=YWgyNmVuOHJ1cnpn&utm_source=qr"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+              <a
+                href="https://dribbble.com/Sakiradaodu"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Dribbble"
+                className="text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors"
+              >
+                <DribbbleIcon className="w-5 h-5" />
+              </a>
               <Link to="/admin" className="text-gray-500 dark:text-gray-400 hover:text-orange-500 transition-colors flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest">
                 <Settings className="w-4 h-4" /> Admin
               </Link>
